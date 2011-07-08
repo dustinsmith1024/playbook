@@ -4,18 +4,7 @@ $(document).ready(function () {
       $('#status').html(e.pageX +', '+ e.pageY);
    }); 
 
-    $("canvas").click(function(e){
-      var x = e.pageX - this.offsetLeft;
-      var y = e.pageY - this.offsetTop;
-	  //console.log(x + " " + y);
-	  if($("input:checked").val()=="offense"){
-		addX(x,y); //NEED TOGGLES FOR WHICH ON WE WANT TO DRAW
-	  }else{
-		addO(x,y);
-	  }
-   });
-
-  drawCourt();
+				  init();
 
 });
 
@@ -36,6 +25,7 @@ function drawCourt(){
 var X = {
 	x : 0,
 	y : 0,
+	canvas : $CANVAS,
 	strokeStyle : "#000",
 	strokeWidth : 3,
 	strokeJoin : "round",
@@ -53,7 +43,7 @@ var X = {
 		return this.y - 5
 	},
 	draw : function() {
-	  $("canvas").drawLine({
+	  $CANVAS.drawLine({
 						 strokeStyle: this.strokeStyle,
 						 strokeWidth: this.strokeWidth,
 						 strokeCap: this.strokeCap,
@@ -62,7 +52,7 @@ var X = {
 						 x2: this.x2(), y2: this.y2()
 						 });
 	
-	  $("canvas").drawLine({
+	  $CANVAS.drawLine({
 						 strokeStyle: this.strokeStyle,
 						 strokeWidth: this.strokeWidth,
 						 strokeCap: this.strokeCap,
@@ -77,8 +67,9 @@ var X = {
 var O = {
 	x : 0,
 	y : 0,
+	canvas : $CANVAS,
 	draw : function(){
-	$("canvas").drawEllipse({
+		$CANVAS.drawEllipse({
 							strokeStyle: "#000",
 							x: this.x, y: this.y,
 							width: 15, height: 15
@@ -105,10 +96,11 @@ function addO(x, y) {
 }
 
 var canvas;
+var $CANVAS;
 var ctx;
 var WIDTH;
 var HEIGHT;
-var INTERVAL = 20;  // how often, in milliseconds, we check to see if a redraw is needed
+var INTERVAL = 200;  // how often, in milliseconds, we check to see if a redraw is needed
 
 var isDrag = false;
 var mx, my; // mouse coordinates
@@ -142,56 +134,72 @@ var stylePaddingLeft, stylePaddingTop, styleBorderLeft, styleBorderTop;
 // then add everything we want to intially exist on the canvas
 function init() {
 	$canvas = $('canvas');
+	$CANVAS = $canvas;
 	HEIGHT = $canvas.height();
 	WIDTH = $canvas.width();
-	ctx = $canvas.loadCanvas('2d');
-	$ghostcanvas = $('canvas');
+	//ctx = $canvas.loadCanvas('2d');
+	$ghostcanvas = $canvas.clone();
 	$ghostcanvas.height = HEIGHT;
 	$ghostcanvas.width = WIDTH;
-	gctx = $ghostcanvas.loadCanvas("2d");
+	//gctx = $ghostcanvas.loadCanvas("2d");
 	
 	//fixes a problem where double clicking causes text to get selected on the canvas
 	$canvas.select(function () { return false; });
 	
 	// fixes mouse co-ordinate problems when there's a border or padding
 	// see getMouse for more detail
-	if (document.defaultView && document.defaultView.getComputedStyle) {
+	/*if (document.defaultView && document.defaultView.getComputedStyle) {
 		stylePaddingLeft = parseInt(document.defaultView.getComputedStyle(canvas, null)['paddingLeft'], 10)      || 0;
 		stylePaddingTop  = parseInt(document.defaultView.getComputedStyle(canvas, null)['paddingTop'], 10)       || 0;
 		styleBorderLeft  = parseInt(document.defaultView.getComputedStyle(canvas, null)['borderLeftWidth'], 10)  || 0;
 		styleBorderTop   = parseInt(document.defaultView.getComputedStyle(canvas, null)['borderTopWidth'], 10)   || 0;
-	}
+	}*/
 	
 	// make draw() fire every INTERVAL milliseconds.
 	setInterval(draw, INTERVAL);
 	
 	// add our events. Up and down are for dragging,
 	// double click is for making new boxes
-	$canvas.mousedown(function(){
-				myDown;
+	$canvas.mousedown(function(event){
+					  console.log("mousedown");
+				myDown(event);
 	}).mouseup(function(){
-				myUp;
+	//			myUp;
 	}).dblclick(function(){
-				myDblClick;
+	//			myDblClick;
 	});
 	
 	// add custom initialization here:
 	//add court or draw original stuff
 	// add an orange rectangle
-	addRect(200, 200, 40, 40, '#FFC02B');
+	//addRect(200, 200, 40, 40, '#FFC02B');
 	
 	// add a smaller blue rectangle
-	addRect(25, 90, 25, 25, '#2BB8FF');
+	//addRect(25, 90, 25, 25, '#2BB8FF');
+	$("canvas").click(function(e){
+					  var x = e.pageX - this.offsetLeft;
+					  var y = e.pageY - this.offsetTop;
+					  //console.log(x + " " + y);
+					  if($("input:checked").val()=="offense"){
+					  addX(x,y); //NEED TOGGLES FOR WHICH ON WE WANT TO DRAW
+					  }else{
+					  addO(x,y);
+					  }
+	});
+	
+	
 }
 
 // While draw is called as often as the INTERVAL variable demands,
 // It only ever does something if the canvas gets invalidated by our code
 function draw() {
+	//console.log("redraw");
+	$canvas.attr("id");
 	if (canvasValid == false) {
 		$canvas.clearCanvas();
 		
 		// Add stuff you want drawn in the background all the time here
-		
+		drawCourt();
 		// draw all boxes
 		var l = team.length;
 		for (var i = 0; i < l; i++) {
@@ -211,4 +219,49 @@ function draw() {
 		
 		canvasValid = true;
 	}
+}
+
+function myDown(e){
+	//getMouse(e);
+	var x = e.pageX - $CANVAS[0].offsetLeft;
+	var y = e.pageY - $CANVAS[0].offsetTop;
+	//clear(gctx); // clear the ghost canvas from its last use
+	
+	// run through all the boxes
+	var l = team.length;
+	for (var i = l-1; i >= 0; i--) {
+		// draw shape onto ghost context
+		team[i].canvas = $ghostcanvas;
+		team[i].draw();
+		
+		// get image data at the mouse x,y pixel
+		console.log(x + " " + y);
+		var imageData = document.getElementById('court').getContext('2d').getImageData(x, y, 1, 1);
+		console.log(imageData);
+		//.getContext('2d').getImageData(1,10,100,100);
+		var index = (x + y * imageData.width) * 4;
+		console.log(index);
+		// if the mouse pixel exists, select and break
+		if (imageData.data[index] > 0) {
+			mySel = team[i];
+			offsetx = x - mySel.x;
+			offsety = y - mySel.y;
+			mySel.x = x - offsetx;
+			mySel.y = y - offsety;
+			isDrag = true;
+			console.log("drag");
+			//canvas.onmousemove = myMove;
+			//invalidate();
+			//clear(gctx);
+			return;
+		}
+		
+	}
+	console.log("no selection");
+	// havent returned means we have selected nothing
+	mySel = null;
+	// clear the ghost canvas for next time
+	//clear(gctx);
+	// invalidate because we might need the selection border to disappear
+	//invalidate();
 }
