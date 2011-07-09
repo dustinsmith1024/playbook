@@ -3,17 +3,53 @@ $(document).ready(function () {
 });
 
 var team = [];
+var Court = {
+	//NBA
+	nba : { //http://www.sportsknowhow.com/basketball/dimensions/nba-basketball-court-dimensions.html
+		length : 94,
+		width : 50,
+		laneWidth : 16,
+		laneHeight : 15, //THIS IS FROM THE HOOP, NOT FROM THE BASELINE
+	    laneHeightFromBaseline : 18.83, //18ft10in
+		threeLength : 23.75, //23ft 9in
+		hoop : .25, //4in from baseline
+		hoopCenter : function(){return this.width / 2;}
+	},
+	college : {
+		length : 84,
+		width : 50,
+		laneWidth : 12,
+		laneHeight : 15, //THIS IS FROM THE HOOP, NOT FROM THE BASELINE
+	    laneHeightFromBaseline : 18.83, //18ft10in
+		threeLength : 20.75, //20ft 9in
+		hoop : .25, //4in from baseline
+		hoopCenter : function(){return this.width / 2;}
+	},
+	hs : {
+		length : 84,
+		width : 50,
+		laneWidth : 12,
+		laneHeight : 15, //THIS IS FROM THE HOOP, NOT FROM THE BASELINE
+	    laneHeightFromBaseline : 18.83, //18ft10in
+		threeLength : 19.75, //23ft 9in
+		hoop : .25, //4in from baseline
+		hoopCenter : function(){return this.width / 2;}
+	}
+	
+};
 
 function drawCourt(){
-  $canvas.drawRect({
-  	strokeStyle: "#000",
-	strokeWidth: 1,
-	x: 10, y: 10,
-	width: 575,
-	height: 330,
-	cornerRadius: 1,
-    fromCenter: false
-  });  
+	court_type = $('input[name="court_type"]:checked').val();
+	$canvas.clearCanvas();
+	$canvas.drawRect({
+					 strokeStyle: "#000",
+					 strokeWidth: 3,
+					 x: 3, y: 3,
+					 width: Court[court_type].length * 10,
+					 height: Court[court_type].width * 10,
+					 cornerRadius: 1,
+ 					 fromCenter: false
+    });  
 }
 
 var X = {
@@ -69,6 +105,9 @@ var O = {
 	x : 0,
 	y : 0,
 	write_to : 0,
+	strokeStyle : "#000",
+	strokeWidth : 3,
+	fillStyle : "#FFF",
 	canvas : function(){
 		if(this.write_to==0){
 			return $CANVAS;
@@ -78,9 +117,11 @@ var O = {
 	},
 	draw : function(){
 		this.canvas().drawEllipse({
-							strokeStyle: "#000",
+							fillStyle: this.fillStyle,
+							strokeStyle: this.strokeStyle,
+							strokeWidth: this.strokeWidth,
 							x: this.x, y: this.y,
-							width: 15, height: 15
+							width: 13, height: 13
 							});
 	}
 }
@@ -116,7 +157,7 @@ var canvasValid = false;
 // If in the future we want to select multiple objects, this will get turned into an array
 var mySel; 
 // The selection color and width. Right now we have a red selection with a small width
-var mySelColor = '#CCC';
+var mySelColor = '#FF6600';
 // we use a fake canvas to draw individual shapes for selection testing
 var $ghostcanvas;
 // since we can drag from anywhere in a node
@@ -161,6 +202,9 @@ function init() {
 						console.log("double!");
 						myDblClick(event);
 	});
+	$('input[name="court_type"]').change(function(){
+										 drawCourt();
+										 });
 	// add custom initialization here:
 }
 
@@ -239,15 +283,15 @@ function myDown(e){
 }
 
 function clear(c) { //NEED TO FIX HEIGHT AND WIDTH 
-	c[0].getContext('2d').clearRect(0, 0, 600, 450);
+	c[0].getContext('2d').clearRect(0, 0, 700, 400);
 	//c.clearRect(0, 0, WIDTH, HEIGHT);
 } 
 function clear2(ctx){
 	$ghostcanvas.clearCanvas();
 	$ghostcanvas.width = 0;
 	$ghostcanvas.width = $CANVAS.width;
-	$ghostcanvas[0].getContext('2d').width = 0;//$CANVAS[].getContext('2d').width;
-	$ghostcanvas[0].getContext('2d').width = $CANVAS[0].getContext('2d').width;	
+	//$ghostcanvas[0].getContext('2d').width = 0;//$CANVAS[].getContext('2d').width;
+	//$ghostcanvas[0].getContext('2d').width = $CANVAS[0].getContext('2d').width;	
 }
 // adds a new node
 function myDblClick(e) {
@@ -257,7 +301,7 @@ function myDblClick(e) {
 	// for this method width and height determine the starting X and Y, too.
 	// so I left them as vars in case someone wanted to make them args for something and copy this code
 	
-	if($("input:checked").val()=="offense"){
+	if($('input[name="player_type"]:checked').val()=="offense"){
 		console.log("Draw X");
 		addX(x,y); //NEED TOGGLES FOR WHICH ON WE WANT TO DRAW
 	}else{
