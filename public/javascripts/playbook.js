@@ -1,42 +1,85 @@
+var canvas;
+var $canvas;
+var court;
+var $CANVAS;
+var WIDTH;
+var HEIGHT;
+var INTERVAL = 20;  // how often, in milliseconds, we check to see if a redraw is needed
+var isDrag = false;
+// when set to true, the canvas will redraw everything
+// invalidate() just sets this to false right now
+// we want to call invalidate() whenever we make a change
+var canvasValid = false;
+// The node (if any) being selected.
+// If in the future we want to select multiple objects, this will get turned into an array
+var mySel; 
+// The selection color and width. Right now we have a red selection with a small width
+var mySelColor = '#FF6600';
+// we use a fake canvas to draw individual shapes for selection testing
+var $ghostcanvas;
+// since we can drag from anywhere in a node
+// instead of just its x/y corner, we need to save
+// the offset of the mouse when we start dragging.
+var offsetx, offsety;
+
+// Padding and border style widths for mouse offsets
+//var stylePaddingLeft, stylePaddingTop, styleBorderLeft, styleBorderTop;
+
 $(document).ready(function () {
 				  init();
 });
 
 var team = [];
-var Court = {
-	//NBA
-	nba : { //http://www.sportsknowhow.com/basketball/dimensions/nba-basketball-court-dimensions.html
-		length : 94,
-		width : 50,
-		laneWidth : 16,
-		laneHeight : 15, //THIS IS FROM THE HOOP, NOT FROM THE BASELINE
-	    laneHeightFromBaseline : 18.83, //18ft10in
-		threeLength : 23.75, //23ft 9in
-		hoop : .25, //4in from baseline
-		hoopCenter : function(){return this.width / 2;}
-	},
-	college : {
-		length : 84,
-		width : 50,
-		laneWidth : 12,
-		laneHeight : 15, //THIS IS FROM THE HOOP, NOT FROM THE BASELINE
-	    laneHeightFromBaseline : 18.83, //18ft10in
-		threeLength : 20.75, //20ft 9in
-		hoop : .25, //4in from baseline
-		hoopCenter : function(){return this.width / 2;}
-	},
-	hs : {
-		length : 84,
-		width : 50,
-		laneWidth : 12,
-		laneHeight : 15, //THIS IS FROM THE HOOP, NOT FROM THE BASELINE
-	    laneHeightFromBaseline : 18.83, //18ft10in
-		threeLength : 19.75, //23ft 9in
-		hoop : .25, //4in from baseline
-		hoopCenter : function(){return this.width / 2;}
+
+function Court(){
+	var kind = $('input[name="court_type"]:checked').val();
+	var type = {
+		nba : {
+			length : 94,
+			width : 50,
+			laneWidth : 16,
+			laneHeight : 15, //THIS IS FROM THE HOOP, NOT FROM THE BASELINE
+			laneHeightFromBaseline : 18.83, //18ft10in
+			threeLength : 23.75, //23ft 9in
+			hoop : 0.25, //4in from baseline
+			hoopCenter : function(){return this.width / 2;}   
+		},
+		college : {
+			length : 84,
+			width : 50,
+			laneWidth : 12,
+			laneHeight : 15, //THIS IS FROM THE HOOP, NOT FROM THE BASELINE
+			laneHeightFromBaseline : 18.83, //18ft10in
+			threeLength : 20.75, //20ft 9in
+			hoop : 0.25, //4in from baseline
+			hoopCenter : function(){return this.width / 2;}
+		},
+		hs : {
+			length : 84,
+			width : 50,
+			laneWidth : 12,
+			laneHeight : 15, //THIS IS FROM THE HOOP, NOT FROM THE BASELINE
+			laneHeightFromBaseline : 18.83, //18ft10in
+			threeLength : 19.75, //23ft 9in
+			hoop : 0.25, //4in from baseline
+			hoopCenter : function(){return this.width / 2;}
+		}	
+	};
+	function append() {
+		$CANVAS.clearCanvas();
+		$CANVAS.drawRect({
+		  strokeStyle: "#000",
+		  strokeWidth: 3,
+		  x: 3,
+		  y: 3,
+		  width: type[kind].length * 10,
+		  height: type[kind].width * 10,
+		  cornerRadius: 1,
+		  fromCenter: false
+		});  
 	}
-	
-};
+	this.draw = append();
+}
 
 function drawCourt(){
 	court_type = $('input[name="court_type"]:checked').val();
@@ -142,32 +185,6 @@ function addO(x, y) {
 	player.draw();
 }
 
-var canvas;
-var $canvas;
-var $CANVAS;
-var WIDTH;
-var HEIGHT;
-var INTERVAL = 20;  // how often, in milliseconds, we check to see if a redraw is needed
-var isDrag = false;
-// when set to true, the canvas will redraw everything
-// invalidate() just sets this to false right now
-// we want to call invalidate() whenever we make a change
-var canvasValid = false;
-// The node (if any) being selected.
-// If in the future we want to select multiple objects, this will get turned into an array
-var mySel; 
-// The selection color and width. Right now we have a red selection with a small width
-var mySelColor = '#FF6600';
-// we use a fake canvas to draw individual shapes for selection testing
-var $ghostcanvas;
-// since we can drag from anywhere in a node
-// instead of just its x/y corner, we need to save
-// the offset of the mouse when we start dragging.
-var offsetx, offsety;
-
-// Padding and border style widths for mouse offsets
-//var stylePaddingLeft, stylePaddingTop, styleBorderLeft, styleBorderTop;
-
 function invalidate() {
 	//Helps performance, only draws the canvas while its valid.
 	canvasValid = false;
@@ -203,9 +220,13 @@ function init() {
 						myDblClick(event);
 	});
 	$('input[name="court_type"]').change(function(){
-										 drawCourt();
+										 court = new Court();
+										 court.draw;
 										 });
 	// add custom initialization here:
+	court = new Court();
+	console.log(court);
+	court.draw;
 }
 
 
@@ -215,7 +236,9 @@ function draw() {
 	if (canvasValid == false) {
 		$canvas.clearCanvas();
 		// Add stuff you want drawn in the background all the time here
-		drawCourt();
+		c = new Court();
+		court.draw;
+		//drawCourt();
 		
 		// draw all boxes
 		var l = team.length;
@@ -229,7 +252,6 @@ function draw() {
 			team[i].draw();
 		}
 		// Add stuff you want drawn on top all the time here
-
 		canvasValid = true;
 	}
 }
@@ -286,13 +308,7 @@ function clear(c) { //NEED TO FIX HEIGHT AND WIDTH
 	c[0].getContext('2d').clearRect(0, 0, 700, 400);
 	//c.clearRect(0, 0, WIDTH, HEIGHT);
 } 
-function clear2(ctx){
-	$ghostcanvas.clearCanvas();
-	$ghostcanvas.width = 0;
-	$ghostcanvas.width = $CANVAS.width;
-	//$ghostcanvas[0].getContext('2d').width = 0;//$CANVAS[].getContext('2d').width;
-	//$ghostcanvas[0].getContext('2d').width = $CANVAS[0].getContext('2d').width;	
-}
+
 // adds a new node
 function myDblClick(e) {
 	console.log("dblClick");
@@ -319,10 +335,7 @@ function myMove(e){
 		
 		mySel.x = x - offsetx;
 		mySel.y = y - offsety;   
-		//console.log(mySel);
-		//console.log(x + " " + y);
-		
-		//mySel.draw();
+
 		// something is changing position so we better invalidate the canvas!
 		invalidate();
 	}
