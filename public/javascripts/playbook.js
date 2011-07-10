@@ -31,6 +31,12 @@ $(document).ready(function () {
 
 var team = [];
 
+function teamCount(kind){
+	return _.select(team, function(t){
+		 return t.team == kind;
+	}).length;
+}
+
 function Court(){
 	var kind = $('input[name="court_type"]:checked').val();
 	var type = {
@@ -41,7 +47,7 @@ function Court(){
 			laneHeight : 15, //THIS IS FROM THE HOOP, NOT FROM THE BASELINE
 			laneHeightFromBaseline : 18.83, //18ft10in
 			threeLength : 23.75, //23ft 9in
-			hoop : 0.25, //4in from baseline
+			hoop : 4, //4ft from baseline
 			hoopCenter : function(){return this.width / 2;}   
 		},
 		college : {
@@ -51,7 +57,7 @@ function Court(){
 			laneHeight : 15, //THIS IS FROM THE HOOP, NOT FROM THE BASELINE
 			laneHeightFromBaseline : 18.83, //18ft10in
 			threeLength : 20.75, //20ft 9in
-			hoop : 0.25, //4in from baseline
+			hoop : 4, //4ft from baseline
 			hoopCenter : function(){return this.width / 2;}
 		},
 		hs : {
@@ -60,8 +66,8 @@ function Court(){
 			laneWidth : 12,
 			laneHeight : 15, //THIS IS FROM THE HOOP, NOT FROM THE BASELINE
 			laneHeightFromBaseline : 18.83, //18ft10in
-			threeLength : 19.75, //23ft 9in
-			hoop : 0.25, //4in from baseline
+			threeLength : 19.75, //19ft 9in
+			hoop : 4, //4ft from baseline
 			hoopCenter : function(){return this.width / 2;}
 		}	
 	};
@@ -76,7 +82,61 @@ function Court(){
 		  height: type[kind].width * 10,
 		  cornerRadius: 1,
 		  fromCenter: false
-		});  
+		});
+		//console.log((type[kind].width / 2) * 10 - (type[kind].laneWidth / 2));
+		$CANVAS.drawLine({ //TOP FREE THROW
+							 strokeStyle: "#000",
+							 strokeWidth: 3,
+							 strokeCap: "round",
+							 strokeJoin: "round",
+							 x1: 3, y1: ((type[kind].width / 2) - (type[kind].laneWidth / 2)) * 10,
+							 x2: type[kind].laneHeightFromBaseline * 10, y2: ((type[kind].width / 2) - (type[kind].laneWidth / 2)) * 10
+		});
+		$CANVAS.drawLine({ //BOTTOM FREE THROW
+						 strokeStyle: "#000",
+						 strokeWidth: 3,
+						 strokeCap: "round",
+						 strokeJoin: "round",
+						 x1: 3, y1: ((type[kind].width / 2) + (type[kind].laneWidth / 2)) * 10,
+						 x2: type[kind].laneHeightFromBaseline * 10, y2: ((type[kind].width / 2) + (type[kind].laneWidth / 2)) * 10,
+						 x3: type[kind].laneHeightFromBaseline * 10, y3: ((type[kind].width / 2) - (type[kind].laneWidth / 2)) * 10
+						 });
+		$CANVAS.drawArc({ //Free throw circle
+							strokeStyle: "#000",
+							strokeWidth: 3,
+							x: type[kind].laneHeightFromBaseline * 10, 
+							y: ((type[kind].width / 2) + (type[kind].laneWidth / 2)) * 10 - (type[kind].laneWidth * 5),
+							radius: type[kind].laneWidth / 2 * 10,
+							fromCenter: true,
+							start: 0, end: 180 //180 is half
+						});
+		console.log(type[kind].hoop * 10);
+		$CANVAS.drawArc({ //3 Point Line
+						strokeStyle: "#000",
+						strokeWidth: 3,
+						x: (type[kind].hoop) * 10 + 3, 
+						y: ((type[kind].width / 2) + (type[kind].laneWidth / 2)) * 10 - (type[kind].laneWidth * 5),
+						radius: (type[kind].threeLength) * 10 + 10,
+						fromCenter: true,
+						start: 0, end: 180
+						});
+		$CANVAS.drawLine({ //BACKBOARD
+						 strokeStyle: "#000",
+						 strokeWidth: 3,
+						 strokeCap: "round",
+						 strokeJoin: "round",
+						 x1: (type[kind].hoop) * 10 + 3, y1: (type[kind].width / 2) * 10 - 15,
+						 x2: (type[kind].hoop) * 10 + 3, y2: (type[kind].width / 2) * 10 + 15
+						 });
+		$CANVAS.drawArc({ //HOOP
+						strokeStyle: "#000",
+						strokeWidth: 3,
+						x: (type[kind].hoop) * 10 + 3 + 10, 
+						y: (type[kind].width / 2) * 10,
+						radius: 10,
+						fromCenter: true,
+						start: 0, end: 360
+						});
 	}
 	this.draw = append();
 }
@@ -98,6 +158,7 @@ function drawCourt(){
 var X = {
 	x : 0,
 	y : 0,
+	team : "offense",
 	write_to : 0,
 	canvas : function(){
 		if(this.write_to==0){
@@ -147,6 +208,7 @@ var X = {
 var O = {
 	x : 0,
 	y : 0,
+	team : "defense",
 	write_to : 0,
 	strokeStyle : "#000",
 	strokeWidth : 3,
@@ -165,7 +227,7 @@ var O = {
 							strokeWidth: this.strokeWidth,
 							x: this.x, y: this.y,
 							width: 13, height: 13
-							});
+		});
 	}
 }
 
@@ -195,7 +257,6 @@ function init() {
 	$canvas = $('#court');
 	$CANVAS = $canvas;
 	$ghostcanvas = $canvas.clone();
-	//console.log($ghostcanvas);
 	//fixes a problem where double clicking causes text to get selected on the canvas
 	$canvas.select(function () { return false; });
 	// fixes mouse co-ordinate problems when there's a border or padding
@@ -211,24 +272,21 @@ function init() {
 	// add our events. Up and down are for dragging,
 	// double click is for making new boxes
 	$canvas.mousedown(function(event){
-						console.log("mousedown");
 						myDown(event);
 					  }).mouseup(function(event){
 						myUp(event);
 					  }).dblclick(function(event){
-						console.log("double!");
 						myDblClick(event);
 	});
 	$('input[name="court_type"]').change(function(){
 										 court = new Court();
 										 court.draw;
-										 });
+	});
 	// add custom initialization here:
 	court = new Court();
 	console.log(court);
 	court.draw;
 }
-
 
 // While draw is called as often as the INTERVAL variable demands,
 // It only ever does something if the canvas gets invalidated by our code
@@ -238,8 +296,6 @@ function draw() {
 		// Add stuff you want drawn in the background all the time here
 		c = new Court();
 		court.draw;
-		//drawCourt();
-		
 		// draw all boxes
 		var l = team.length;
 		for (var i = 0; i < l; i++) {
@@ -263,19 +319,16 @@ function myDown(e){
 	clear($ghostcanvas);
 	// run through all the boxes
 	var l = team.length;
-	console.log("L: " + l);
+	//console.log("L: " + l);
 	//for (var i = 0; i < l; i++) {
 	for (var i = l-1; i >= 0; i--) {
-		console.log(i);
 		// draw shape onto ghost context		
 		team[i].write_to = 1; //SWITCHES TO GHOST
 		team[i].draw();
 		team[i].write_to = 0; //SWITCHES BACK TO MAIN CANVAS
 		// get image data at the mouse x,y pixel
 		var imageData = $ghostcanvas[0].getContext('2d').getImageData(x, y, 1, 1);
-		//console.log(imageData);
 		var index = (x + y * imageData.width) * 4;
-		//console.log(index);
 		// if the mouse pixel exists, select and break
 		if (imageData.data[3] > 0) {
 			mySel = team[i];
@@ -285,20 +338,15 @@ function myDown(e){
 			mySel.x = x - offsetx;
 			mySel.y = y - offsety;
 			isDrag = true;
-			//console.log(mySel);
 			$canvas.mousemove(function(event){ myMove(event);});
 			clear($ghostcanvas);
 			invalidate();
-			// run through all the boxes//clear(gctx);
 			return;
-		}
-		
+		}	
 	}
-	console.log("no selection");
 	// havent returned means we have selected nothing
 	mySel = null;
 	// clear the ghost canvas for next time
-	//clear(gctx);
 	clear($ghostcanvas);
 	// invalidate because we might need the selection border to disappear
 	invalidate();
@@ -306,23 +354,22 @@ function myDown(e){
 
 function clear(c) { //NEED TO FIX HEIGHT AND WIDTH 
 	c[0].getContext('2d').clearRect(0, 0, 700, 400);
-	//c.clearRect(0, 0, WIDTH, HEIGHT);
 } 
 
 // adds a new node
 function myDblClick(e) {
-	console.log("dblClick");
+	//console.log("dblClick");
 	var x = e.pageX - $CANVAS[0].offsetLeft;
 	var y = e.pageY - $CANVAS[0].offsetTop;
-	// for this method width and height determine the starting X and Y, too.
-	// so I left them as vars in case someone wanted to make them args for something and copy this code
-	
 	if($('input[name="player_type"]:checked').val()=="offense"){
 		console.log("Draw X");
-		addX(x,y); //NEED TOGGLES FOR WHICH ON WE WANT TO DRAW
+		if (teamCount("offense") < 5){
+			addX(x,y); //NEED TOGGLES FOR WHICH ON WE WANT TO DRAW
+		}//ELSE TELL THE USER THERE IS TOO MANY
 	}else{
-		console.log("Draw O");
-		addO(x,y);
+		if (teamCount("defense") < 5){
+			addO(x,y);
+		}//ELSE TELL THE USER THERE IS TOO MANY
 	}
 }
 
