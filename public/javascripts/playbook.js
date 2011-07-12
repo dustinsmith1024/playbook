@@ -4,6 +4,7 @@ var court;
 var $CANVAS;
 var WIDTH;
 var HEIGHT;
+var $ghostcanvas; // we use a fake canvas to draw individual shapes for selection testing
 var INTERVAL = 20;  // how often, in milliseconds, we check to see if a redraw is needed
 var isDrag = false;
 // when set to true, the canvas will redraw everything
@@ -15,21 +16,18 @@ var canvasValid = false;
 var mySel; 
 // The selection color and width. Right now we have a red selection with a small width
 var mySelColor = '#FF6600';
-// we use a fake canvas to draw individual shapes for selection testing
-var $ghostcanvas;
 // since we can drag from anywhere in a node
 // instead of just its x/y corner, we need to save
 // the offset of the mouse when we start dragging.
 var offsetx, offsety;
-
+var team = [];
+var steps = [];
 // Padding and border style widths for mouse offsets
 //var stylePaddingLeft, stylePaddingTop, styleBorderLeft, styleBorderTop;
 
 $(document).ready(function () {
 				  init();
 });
-
-var team = [];
 
 function teamCount(kind){
 	return _.select(team, function(t){
@@ -110,7 +108,6 @@ function Court(){
 							fromCenter: true,
 							start: 0, end: 180 //180 is half
 						});
-		console.log(type[kind].hoop * 10);
 		$CANVAS.drawArc({ //3 Point Line
 						strokeStyle: "#000",
 						strokeWidth: 3,
@@ -155,35 +152,35 @@ function drawCourt(){
     });  
 }
 
-var X = {
-	x : 0,
-	y : 0,
-	team : "offense",
-	write_to : 0,
-	canvas : function(){
-		if(this.write_to==0){
+var X = function(){
+	this.x = 0;
+	this.y = 0;
+	this.team = "offense";
+	this.write_to = 0;
+	this.canvas = function(){
+		if(this.write_to===0){
 			return $CANVAS;
 		}else{
 			return $ghostcanvas;
 		}
-	},
-	strokeStyle : "#000",
-	strokeWidth : 3,
-	strokeJoin : "round",
-	strokeCap : "round",
-	x1 : function() {
+	};
+	this.strokeStyle = "#000";
+	this.strokeWidth = 3;
+	this.strokeJoin = "round";
+	this.strokeCap = "round";
+	this.x1 = function() {
 		return this.x + 5;
-	},
-	y1 : function() {
-		return this.y + 5
-	},
-	x2 : function() {
+	};
+	this.y1 = function() {
+		return this.y + 5;
+	};
+	this.x2 = function() {
 		return this.x - 5;
-	},
-	y2 : function() {
-		return this.y - 5
-	},
-	draw : function() {
+	};
+	this.y2 = function() {
+		return this.y - 5;
+	};
+	this.draw = function() {
 	  this.canvas().drawLine({
 						 strokeStyle: this.strokeStyle,
 						 strokeWidth: this.strokeWidth,
@@ -202,37 +199,40 @@ var X = {
 						 x2: this.x2(), y2: this.y1(),
 						 fromCenter: true
 						 });   
-  }
+	};
 };
 
-var O = {
-	x : 0,
-	y : 0,
-	team : "defense",
-	write_to : 0,
-	strokeStyle : "#000",
-	strokeWidth : 3,
-	fillStyle : "#FFF",
-	canvas : function(){
-		if(this.write_to==0){
+var O = function (){
+	this.x = 0;
+	this.y = 0;
+	this.team = "defense";
+	this.write_to = 0;
+	this.strokeStyle = "#000";
+	this.strokeWidth = 3;
+	this.fillStyle = "#FFF";
+	this.canvas = function(){
+		if(this.write_to===0){
 			return $CANVAS;
 		}else{
 			return $ghostcanvas;
 		}
-	},
-	draw : function(){
+	};
+	this.draw = function(){
 		this.canvas().drawEllipse({
-							fillStyle: this.fillStyle,
-							strokeStyle: this.strokeStyle,
-							strokeWidth: this.strokeWidth,
-							x: this.x, y: this.y,
-							width: 13, height: 13
-		});
-	}
-}
+								  fillStyle: this.fillStyle,
+								  strokeStyle: this.strokeStyle,
+								  strokeWidth: this.strokeWidth,
+								  x: this.x, y: this.y,
+								  width: 13, height: 13
+								  });
+	};
+	this.move = function(){
+		// or just do it in the animate loop
+	};
+};
 
 function addX(x, y) {
-  var player = Object.create(X);
+  var player = new X();
   player.x = x;
   player.y = y;
   team.push(player);
@@ -240,7 +240,7 @@ function addX(x, y) {
 }
 
 function addO(x, y) {
-	var player = Object.create(O);
+	var player = new O();
 	player.x = x;
 	player.y = y;
 	team.push(player);
@@ -282,15 +282,79 @@ function init() {
 										 court = new Court();
 										 court.draw;
 	});
+	$("button#step").click(function(){
+						   //save step with less than 5 players warming??
+						   //console.log("button step");
+						   //console.log(team);
+						   saveStep(team);
+						   //getStepData(steps[steps.length - 1]);
+					//Would also save to the db
+					//save the image as a thumbnail and add it to the side.
+					});
+	$("button#animate").click(function(){
+							  animate();
+						   });
 	// add custom initialization here:
 	court = new Court();
 	console.log(court);
 	court.draw;
 }
 
+function saveStep(teamer){
+	where = steps.length;
+	steps[where] = [];
+	console.log(teamer[0]);
+	_.each(teamer, function(teamy){
+		   if(teamy.team == "offense"){
+				var tmp = new X();
+		   }else{
+				var tmp = new O();
+		   }
+		   tmp.x = teamy.x;
+		   tmp.y = teamy.y;
+		   steps[where].push(tmp);
+	});//Push the team onto this step  	
+}
+
+function getStepData(step){
+	_.each(step,function(teamer){
+		   $("body").append("<br/>" + teamer.x + " " + teamer.y);
+		   });
+}
+
+function animate(){
+	_.each(steps, function(step, step_num){
+		   console.log(step_num);
+		   console.log(step);
+		   _.each(step, function(player, key){
+				  console.log(player.x);
+				  var orig = player.x;
+				  var end = player.x + 100;
+				  var spot = orig;
+				  team.splice(key,key); // SOMEHOW NEED TO DELETE FROM THE MAIN SCREEN AND DRAW OLD TEAM, MAYBE JUST DRAW FIRST ANIMATE LATER...
+				  if (player.team=="offense"){
+					addX(player.x,player.y);
+				  }else{
+					addO(player.x,player.y);
+				  }
+				  console.log(orig + " " + end + " " + spot);
+				  function move(){
+					console.log("move");
+				  	if (spot < end){
+						player.x = spot;
+						spot = spot + 1;
+						draw();
+						canvasValid = false;
+					}
+				  }
+				  setInterval(move,20);
+		  });
+	});
+}
 // While draw is called as often as the INTERVAL variable demands,
 // It only ever does something if the canvas gets invalidated by our code
 function draw() {
+	//console.log(
 	if (canvasValid == false) {
 		$canvas.clearCanvas();
 		// Add stuff you want drawn in the background all the time here
@@ -310,6 +374,16 @@ function draw() {
 		// Add stuff you want drawn on top all the time here
 		canvasValid = true;
 	}
+}
+
+function copyCtx(){
+	ctx1 = $("canvas:first")[0].getContext('2d');
+	ctx2 = $("canvas:last")[0].getContext('2d');
+	var src = $("canvas:first")[0].toDataURL("image/png");
+	var img = document.createElement('img'); // create a Image Element
+    img.src = src;   //image source
+    ctx2.drawImage(img, 0, 0);
+	$("body").append(img);	
 }
 
 function myDown(e){
