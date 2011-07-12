@@ -155,6 +155,8 @@ function drawCourt(){
 var X = function(){
 	this.x = 0;
 	this.y = 0;
+	this.steps = [];
+	this.current_step = 0;
 	this.team = "offense";
 	this.write_to = 0;
 	this.canvas = function(){
@@ -205,6 +207,8 @@ var X = function(){
 var O = function (){
 	this.x = 0;
 	this.y = 0;
+	this.steps = [];
+	this.current_step = 0;
 	this.team = "defense";
 	this.write_to = 0;
 	this.strokeStyle = "#000";
@@ -286,7 +290,7 @@ function init() {
 						   //save step with less than 5 players warming??
 						   //console.log("button step");
 						   //console.log(team);
-						   saveStep(team);
+						   saveStep();
 						   //getStepData(steps[steps.length - 1]);
 					//Would also save to the db
 					//save the image as a thumbnail and add it to the side.
@@ -300,7 +304,14 @@ function init() {
 	court.draw;
 }
 
-function saveStep(teamer){
+function saveStep(){
+	_.each(team,function(player){
+				player.steps.push([player.x,player.y]);
+				player.current_step = player.current_step + 1;
+		   });
+}
+
+function saveStep2(teamer){
 	where = steps.length;
 	steps[where] = [];
 	console.log(teamer[0]);
@@ -323,6 +334,58 @@ function getStepData(step){
 }
 
 function animate(){
+	_.each(team, function(player, player_num){
+		   var x = player.x;
+		   var y = player.y;
+		   var end_x = player.steps[player.current_step - 1][0];//first one in step is X
+		   var end_y = player.steps[player.current_step - 1][1];//second on in step is y
+		   var spot_x = x;
+		   var spot_y = y;
+		   console.log("x: " + x + " y: " + y + " end_x: " + end_x + " end_y: " + end_y);
+		   function move(){
+		   //console.log("move " + x + " " + end_x);
+				if(x != end_x || y != end_y){
+					//If difference in distance from final spots are unequal we need to move in a diagnol line
+					//Not sure how to do this yet
+					var diff_x = Math.abs(player.x - end_x);
+					var diff_y = Math.abs(player.y - end_y);
+					if (diff_x > diff_y){
+						console.log(diff_x / diff_y);
+					}
+					if (diff_x < diff_y){
+						console.log(diff_y / diff_x);
+					}
+		   
+					if (player.x > end_x){
+						console.log(x + " >X " + end_x);
+						player.x -= 1;
+						//spot_x -= 1;
+					}
+					if (player.x < end_x){
+						console.log(x + " <X " + end_x);
+						player.x += 1;
+						//spot_x += 1;
+					}
+					if (player.y > end_y){
+						console.log(y + " >Y " + end_y);
+						player.y -= 1;
+						//spot_y -= 1;
+					}
+					if (player.y < end_y){
+						console.log(y + " <Y " + end_y);
+						player.y += 1;
+						//spot_y += 1;
+					}
+					draw();
+					canvasValid = false;
+				}
+		   }
+		   setInterval(move,20);
+		   });
+}
+
+
+function animate2(){
 	_.each(steps, function(step, step_num){
 		   console.log(step_num);
 		   console.log(step);
@@ -333,9 +396,9 @@ function animate(){
 				  var spot = orig;
 				  team.splice(key,key); // SOMEHOW NEED TO DELETE FROM THE MAIN SCREEN AND DRAW OLD TEAM, MAYBE JUST DRAW FIRST ANIMATE LATER...
 				  if (player.team=="offense"){
-					addX(player.x,player.y);
+					//addX(player.x,player.y);
 				  }else{
-					addO(player.x,player.y);
+					//addO(player.x,player.y);
 				  }
 				  console.log(orig + " " + end + " " + spot);
 				  function move(){
