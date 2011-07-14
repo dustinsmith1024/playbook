@@ -308,6 +308,7 @@ function saveStep(){
 	_.each(team,function(player){
 				player.steps.push([player.x,player.y]);
 				player.current_step = player.current_step + 1;
+		   $("#steps").append('<li><a href="#step-'+ player.steps.length + '">X ' + player.x + " Y: " + player.y + "</a></li>");
 		   });
 }
 
@@ -341,46 +342,38 @@ function animate(){
 		   var end_y = player.steps[player.current_step - 1][1];//second on in step is y
 		   var spot_x = x;
 		   var spot_y = y;
-		   console.log("x: " + x + " y: " + y + " end_x: " + end_x + " end_y: " + end_y);
+		   //console.log("x: " + x + " y: " + y + " end_x: " + end_x + " end_y: " + end_y);
 		   function move(){
-		   //console.log("move " + x + " " + end_x);
-				if(x != end_x || y != end_y){
+				if(player.x != end_x || player.y != end_y){
+					console.log("draw!");
 					//If difference in distance from final spots are unequal we need to move in a diagnol line
-					//Not sure how to do this yet
 					var diff_x = Math.abs(player.x - end_x);
 					var diff_y = Math.abs(player.y - end_y);
 					if (diff_x > diff_y){
-						console.log(diff_x / diff_y);
+						//console.log(diff_x / diff_y);
 					}
 					if (diff_x < diff_y){
-						console.log(diff_y / diff_x);
-					}
-		   
+						//console.log(diff_y / diff_x);
+					}		   
 					if (player.x > end_x){
-						console.log(x + " >X " + end_x);
-						player.x -= 1;
-						//spot_x -= 1;
+						--player.x;
 					}
 					if (player.x < end_x){
-						console.log(x + " <X " + end_x);
-						player.x += 1;
-						//spot_x += 1;
+						++player.x;
 					}
 					if (player.y > end_y){
-						console.log(y + " >Y " + end_y);
-						player.y -= 1;
-						//spot_y -= 1;
+						--player.y;
 					}
 					if (player.y < end_y){
-						console.log(y + " <Y " + end_y);
-						player.y += 1;
-						//spot_y += 1;
+						++player.y;
 					}
 					draw();
 					canvasValid = false;
+				}else{
+					clearInterval(moveHandle);
 				}
 		   }
-		   setInterval(move,20);
+		   moveHandle = setInterval(move,20);
 		   });
 }
 
